@@ -1,0 +1,15 @@
+{
+  "name": "vercel-log-drain",
+  "version": "1.0.0",
+  "description": "Cloud Run service to receive Vercel logs and forward to Google Cloud Logging",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google-cloud/logging": "^11.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
