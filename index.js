@@ -84,6 +84,9 @@ function processLogs(logs, appName, includeProxy) {
   const entries = []
 
   for (const entry of logs) {
+    // Skip all proxy/request logs early if proxy logging is disabled
+    if (!includeProxy && entry.proxy) continue
+
     const { message: parsedMsg, metadata, pinoLevel } = parseLogEntry(entry)
     let message = parsedMsg
 
@@ -106,7 +109,6 @@ function processLogs(logs, appName, includeProxy) {
 
     // Handle proxy (HTTP request) logs
     if (!message && entry.proxy) {
-      if (!includeProxy) continue
       message = `${entry.proxy.method} ${entry.proxy.path} - ${entry.proxy.statusCode}`
     }
 
