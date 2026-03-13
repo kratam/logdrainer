@@ -206,9 +206,12 @@ const server = http.createServer(async (req, res) => {
       const raw = await readBody(req)
       const rawStr = raw.toString("utf8")
 
+      console.log(`[drain] Received ${raw.length} bytes from ${req.headers["user-agent"] || "unknown"} content-type=${req.headers["content-type"]}`)
+
       // Verify HMAC signature if present
       const signature = req.headers["x-vercel-signature"] || req.headers["x-webhook-signature"]
       if (signature && !verifySignature(rawStr, signature)) {
+        console.log(`[drain] Signature verification FAILED`)
         return sendJson(res, 401, { error: "Invalid signature" })
       }
 
@@ -231,6 +234,8 @@ const server = http.createServer(async (req, res) => {
       // Resolve app name: query param > Vercel projectName from payload > "unknown"
       const appName = query.app || logs[0]?.projectName || "unknown"
 
+      console.log(`[drain] app=${appName} total=${logs.length} proxy=${includeProxy}`)
+
       const entries = processLogs(logs, appName, includeProxy)
 
       // Batch write to Google Cloud Logging
@@ -238,6 +243,7 @@ const server = http.createServer(async (req, res) => {
         await log.write(entries)
       }
 
+      console.log(`[drain] Wrote ${entries.length}/${logs.length} entries for ${appName}`)
       return sendJson(res, 200, { success: true, processed: entries.length, total: logs.length })
     } catch (error) {
       console.error("Error processing log drain:", error)
