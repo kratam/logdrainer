@@ -96,7 +96,7 @@ function processLogs(logs, appName, includeProxy) {
     let severity = VERCEL_LEVELS[entry.level?.toLowerCase()] || "INFO"
     if (pinoLevel != null) severity = PINO_LEVELS[pinoLevel] || severity
 
-    // Strip AWS Lambda boilerplate (START/END/REPORT lines) from messages
+    // Strip AWS Lambda boilerplate (START/END/REPORT lines)
     if (message) {
       message = message
         .replace(/START RequestId:.*?\n?/g, "")
@@ -106,7 +106,14 @@ function processLogs(logs, appName, includeProxy) {
     }
 
     // Skip Vercel auto-generated request summary logs (e.g. "[GET] /api/...")
-    if (!includeProxy && message && /^\[(GET|POST|PUT|DELETE|PATCH)\]\s/.test(message)) continue
+    // Check each line — the summary can be wrapped by Lambda RequestId UUIDs
+    if (!includeProxy && message) {
+      const lines = message.split("\n").map(l => l.trim()).filter(Boolean)
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+      const SUMMARY_RE = /^\[(GET|POST|PUT|DELETE|PATCH)\]\s/
+      const isBoilerplate = lines.every(l => UUID_RE.test(l) || SUMMARY_RE.test(l))
+      if (isBoilerplate) continue
+    }
 
     // Handle proxy (HTTP request) logs
     if (!message && entry.proxy) {
