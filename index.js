@@ -235,6 +235,10 @@ const server = http.createServer(async (req, res) => {
       const appName = query.app || logs[0]?.projectName || "unknown"
 
       console.log(`[drain] app=${appName} total=${logs.length} proxy=${includeProxy}`)
+      if (logs.length > 0) {
+        const sample = logs[0]
+        console.log(`[drain] sample entry: type=${sample.type} source=${sample.source} level=${sample.level} hasProxy=${!!sample.proxy} hasMessage=${!!sample.message} msg=${(sample.message || "").substring(0, 200)}`)
+      }
 
       const entries = processLogs(logs, appName, includeProxy)
 
