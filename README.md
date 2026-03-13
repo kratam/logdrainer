@@ -184,7 +184,18 @@ curl -X POST "https://api.vercel.com/v1/drains?slug=${VERCEL_TEAM_SLUG}" \
   }'
 ```
 
-### 8. Tesztelés
+### 8. Cloud Run request logok kiszűrése
+
+A Cloud Run minden bejövő kérést logol (`run.googleapis.com/requests`), ami felesleges zaj a drain service-nél.
+Ez az exclusion filter kiszűri őket a `_Default` sink-ből:
+
+```bash
+gcloud logging sinks update _Default \
+  --add-exclusion name=exclude-drain-requests,filter='resource.labels.service_name="vercel-log-drain" AND logName="projects/'"${GCP_PROJECT_ID}"'/logs/run.googleapis.com%2Frequests"' \
+  --project="${GCP_PROJECT_ID}"
+```
+
+### 9. Tesztelés
 
 ```bash
 # Health check
