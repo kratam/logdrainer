@@ -96,14 +96,13 @@ function processLogs(logs, appName, includeProxy) {
     let severity = VERCEL_LEVELS[entry.level?.toLowerCase()] || "INFO"
     if (pinoLevel != null) severity = PINO_LEVELS[pinoLevel] || severity
 
-    // Strip AWS Lambda boilerplate (START/END/REPORT lines) from raw messages
-    if (!message && entry.message) {
-      const clean = entry.message
-        .replace(/START RequestId:.*?\n/, "")
-        .replace(/END RequestId:.*?\n/, "")
-        .replace(/REPORT RequestId:.*/, "")
+    // Strip AWS Lambda boilerplate (START/END/REPORT lines) from messages
+    if (message) {
+      message = message
+        .replace(/START RequestId:.*?\n?/g, "")
+        .replace(/END RequestId:.*?\n?/g, "")
+        .replace(/REPORT RequestId:.*/g, "")
         .trim()
-      if (clean && !clean.startsWith("{")) message = clean
     }
 
     // Skip Vercel auto-generated request summary logs (e.g. "[GET] /api/...")
