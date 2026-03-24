@@ -89,6 +89,9 @@ function processLogs(logs, appName, includeProxy) {
     // filter on entry.proxy alone — that would drop every log.
     if (!includeProxy && entry.proxy && !entry.message) continue
 
+    // Use per-entry projectName when available (Vercel batches logs from multiple projects)
+    const entryAppName = entry.projectName || appName
+
     const { message: parsedMsg, metadata, pinoLevel } = parseLogEntry(entry)
     let message = parsedMsg
 
@@ -145,7 +148,7 @@ function processLogs(logs, appName, includeProxy) {
       log.entry(
         {
           labels: {
-            app_name: appName,
+            app_name: entryAppName,
             env: entry.environment || "production",
             source: "vercel-log-drain",
             ...(entry.proxy?.path ? { url: entry.proxy.path } : {}),
@@ -153,7 +156,7 @@ function processLogs(logs, appName, includeProxy) {
           resource: {
             type: "cloud_run_revision",
             labels: {
-              service_name: appName,
+              service_name: entryAppName,
               location: entry.executionRegion || "europe-west1",
             },
           },
@@ -236,10 +239,10 @@ const server = http.createServer(async (req, res) => {
       const query = parseQuery(req.url)
       const includeProxy = query.proxy === "true"
 
-      // Resolve app name: query param > Vercel projectName from payload > "unknown"
-      const appName = query.app || logs[0]?.projectName || "unknown"
+      // Resolve default app name: query param > first entry's projectName > "unknown"
+      const defaultAppName = query.app || logs[0]?.projectName || "unknown"
 
-      const entries = processLogs(logs, appName, includeProxy)
+      const entries = processLogs(logs, defaultAppName, includeProxy)
 
       // Batch write to Google Cloud Logging
       if (entries.length > 0) {
